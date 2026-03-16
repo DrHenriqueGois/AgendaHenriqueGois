@@ -2,37 +2,34 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches:
-      - main  # Altere para a sua branch principal se for diferente
+    branches: ["main"]
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout 🛎️
+      - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup Node.js ⚙️
+      - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 20
           cache: 'npm'
-
-      - name: Install Dependencies 📦
+      - name: Install dependencies
         run: npm install
-
-      - name: Build 🏗️
+      - name: Build
         run: npm run build
-
-      - name: Disable Jekyll 🚫
-        run: touch dist/.nojekyll
-
-      - name: Deploy 🚀
-        uses: JamesIves/github-pages-deploy-action@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          folder: dist
-          branch: gh-pages
+          path: './dist'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
