@@ -127,7 +127,7 @@ export const Login = () => {
                 <input
                   type="password"
                   required
-                  className="w-full pl-12 pr-6 py-3.5 md:py-4 bg-[var(--bg-input)] border-2 border-[var(--border-color)] rounded-xl focus:ring-4 focus:ring-primary/5 focus:border-primary outline-none transition-all font-bold text-[var(--text-main)] text-center text-base md:text-lg placeholder:text-[var(--text-muted)]/30"
+                  className="w-full px-12 py-3.5 md:py-4 bg-[var(--bg-input)] border-2 border-[var(--border-color)] rounded-xl focus:ring-4 focus:ring-primary/5 focus:border-primary outline-none transition-all font-bold text-[var(--text-main)] text-center text-base md:text-lg placeholder:text-[var(--text-muted)]/30"
                   placeholder="Sua senha secreta"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}

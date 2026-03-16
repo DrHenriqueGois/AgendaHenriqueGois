@@ -117,29 +117,37 @@ function AppContent() {
           return date && date >= start && date <= end;
         });
       
-      for (const activity of activities) {
-        const notifQ = query(
-          collection(db, 'notifications'),
-          where('userId', '==', teamMember.id),
-          where('activityId', '==', activity.id),
-          where('type', '==', 'reminder'),
-          where('date', '>=', Timestamp.fromDate(start))
-        );
-        
+      if (activities.length === 0) return;
+
+      // Fetch existing notifications for today to avoid duplicates in a single batch
+      const notifQ = query(
+        collection(db, 'notifications'),
+        where('userId', '==', teamMember.id),
+        where('type', '==', 'reminder'),
+        where('date', '>=', Timestamp.fromDate(start)),
+        where('date', '<=', Timestamp.fromDate(end))
+      );
+      
+      try {
         const notifSnapshot = await getDocs(notifQ);
-        
-        if (notifSnapshot.empty) {
-          await addDoc(collection(db, 'notifications'), {
-            userId: teamMember.id,
-            activityId: activity.id,
-            title: 'Atividade para Hoje!',
-            message: `Você tem a atividade "${activity.title}" agendada para hoje.`,
-            date: Timestamp.fromDate(today),
-            type: 'reminder',
-            status: 'pending',
-            createdAt: Timestamp.now()
-          });
+        const existingActivityIds = new Set(notifSnapshot.docs.map(doc => doc.data().activityId));
+
+        for (const activity of activities) {
+          if (!existingActivityIds.has(activity.id)) {
+            await addDoc(collection(db, 'notifications'), {
+              userId: teamMember.id,
+              activityId: activity.id,
+              title: 'Atividade para Hoje!',
+              message: `Você tem a atividade "${activity.title}" agendada para hoje.`,
+              date: Timestamp.fromDate(today),
+              type: 'reminder',
+              status: 'pending',
+              createdAt: Timestamp.now()
+            });
+          }
         }
+      } catch (err) {
+        console.error("Erro ao processar notificações automáticas:", err);
       }
     });
 

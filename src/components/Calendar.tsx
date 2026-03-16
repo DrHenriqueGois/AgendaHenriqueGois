@@ -41,8 +41,17 @@ export const Calendar = ({ onAddActivity, onEditActivity }: CalendarProps) => {
   useEffect(() => {
     if (!user && !teamMember) return;
 
-    // Everyone logged in can see all activities in the calendar to ensure team visibility
-    const q = query(collection(db, 'activities'));
+    // Fetch only activities for the current month and surrounding weeks to optimize performance
+    const monthStart = startOfMonth(currentDate);
+    const monthEnd = endOfMonth(monthStart);
+    const startDate = startOfWeek(monthStart);
+    const endDate = endOfWeek(monthEnd);
+
+    const q = query(
+      collection(db, 'activities'),
+      where('date', '>=', Timestamp.fromDate(startDate)),
+      where('date', '<=', Timestamp.fromDate(endDate))
+    );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -52,7 +61,7 @@ export const Calendar = ({ onAddActivity, onEditActivity }: CalendarProps) => {
     });
 
     return () => unsubscribe();
-  }, [user, teamMember]);
+  }, [user, teamMember, currentDate]);
 
   const handleDeleteActivity = async (id: string) => {
     setIsDeleting(true);

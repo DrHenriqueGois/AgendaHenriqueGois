@@ -39,8 +39,14 @@ export const ActivityList = ({ onEditActivity }: { onEditActivity: (activity: an
     const isAdmin = !!user || teamMember?.role === 'administrador';
     const currentUserId = user?.uid || teamMember?.id;
 
-    // Everyone logged in can see all activities to ensure team visibility
-    const qActivities = query(collection(db, 'activities'));
+    // Fetch activities from the last 30 days and future ones to optimize performance
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const qActivities = query(
+      collection(db, 'activities'),
+      where('date', '>=', Timestamp.fromDate(thirtyDaysAgo))
+    );
 
     const unsubscribeActivities = onSnapshot(qActivities, (snapshot) => {
       const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));

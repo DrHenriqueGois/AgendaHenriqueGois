@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { doc, setDoc, collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, getDocs } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { Palette, Type as TypeIcon, Image as ImageIcon, Instagram, LogOut, Save, Loader2, Lock as LockIcon, Trash2, Users as UsersIcon, UserPlus, Edit2, CheckCircle, XCircle, UploadCloud, Sun, Moon, Bell } from 'lucide-react';
+import { Palette, Type as TypeIcon, Image as ImageIcon, Instagram, LogOut, Save, Loader2, Lock as LockIcon, Trash2, Users as UsersIcon, UserPlus, Edit2, CheckCircle, XCircle, UploadCloud, Sun, Moon, Bell, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { pushNotificationService } from '../services/pushNotificationService';
+import { cloudinaryService } from '../services/cloudinaryService';
 
 const IMAGE_KEYS_MAP: Record<string, string> = {
   faviconUrl: 'favicon',
@@ -149,38 +150,31 @@ export const Settings = () => {
     const file = e.target.files?.[0];
     if (!file || !isAdmin) return;
 
-    // Check file size (Firestore limit is 1MB, but we should stay well below for performance)
-    if (file.size > 800000) {
-      setErrorMessage('A imagem é muito grande. O limite é de 800KB para garantir o salvamento global.');
+    setSettingsLoading(true);
+    setSaveStatus('idle');
+    
+    try {
+      // Use Cloudinary instead of Base64 for better performance and to avoid Firestore limits
+      const result = await cloudinaryService.uploadImage(file);
+      const imageUrl = result.url;
+      
+      // Update local state for immediate feedback
+      setFormData(prev => ({ ...prev, [field]: imageUrl }));
+      
+      // Save to Firestore immediately for global persistence
+      const settingsRef = doc(db, 'settings', 'app_config');
+      await setDoc(settingsRef, { [field]: imageUrl }, { merge: true });
+      
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    } catch (err: any) {
+      console.error('Erro ao salvar imagem:', err);
+      setErrorMessage(err.message || 'Erro ao fazer upload da imagem.');
       setSaveStatus('error');
       setTimeout(() => setSaveStatus('idle'), 4000);
-      return;
+    } finally {
+      setSettingsLoading(false);
     }
-
-    setSettingsLoading(true);
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const base64String = reader.result as string;
-      
-      try {
-        // Update local state for immediate feedback
-        setFormData(prev => ({ ...prev, [field]: base64String }));
-        
-        // Save to Firestore immediately for global persistence
-        const settingsRef = doc(db, 'settings', 'app_config');
-        await setDoc(settingsRef, { [field]: base64String }, { merge: true });
-        
-        setSaveStatus('success');
-        setTimeout(() => setSaveStatus('idle'), 2000);
-      } catch (err: any) {
-        console.error('Erro ao salvar imagem globalmente:', err);
-        setErrorMessage('Erro ao salvar imagem globalmente. Verifique o tamanho.');
-        setSaveStatus('error');
-      } finally {
-        setSettingsLoading(false);
-      }
-    };
-    reader.readAsDataURL(file);
   };
 
   const handleSave = async () => {
@@ -200,7 +194,11 @@ export const Settings = () => {
       await setDoc(settingsRef, formData, { merge: true });
       
       setSaveStatus('success');
-      setTimeout(() => setSaveStatus('idle'), 3000);
+      setErrorMessage('Configurações salvas com sucesso!');
+      setTimeout(() => {
+        setSaveStatus('idle');
+        setErrorMessage('');
+      }, 3000);
 
     } catch (err: any) {
       console.error('Erro ao salvar configurações:', err);
@@ -236,23 +234,40 @@ export const Settings = () => {
   const handleUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAdmin) return;
+    
     setUserLoading(true);
+    setSaveStatus('idle');
+    setErrorMessage('');
+
+    // Create a timeout promise to prevent infinite hangs
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Tempo limite excedido ao salvar usuário. Verifique sua conexão.')), 15000)
+    );
+
     try {
-      if (editingUser) {
-        await updateDoc(doc(db, 'users', editingUser.id), userFormData);
-      } else {
-        await addDoc(collection(db, 'users'), userFormData);
-      }
-      setIsUserModalOpen(false);
-      setEditingUser(null);
-      setUserFormData({ name: '', username: '', password: '', function: '', role: 'usuario', status: 'active' });
+      const operation = editingUser 
+        ? updateDoc(doc(db, 'users', editingUser.id), userFormData)
+        : addDoc(collection(db, 'users'), userFormData);
+
+      // Race the Firestore operation against the timeout
+      await Promise.race([operation, timeoutPromise]);
+
       setSaveStatus('success');
-      setErrorMessage(editingUser ? 'Usuário atualizado!' : 'Usuário cadastrado!');
-      setTimeout(() => setSaveStatus('idle'), 3000);
-    } catch (err) {
-      console.error(err);
+      setErrorMessage(editingUser ? 'Usuário atualizado com sucesso!' : 'Usuário cadastrado com sucesso!');
+      
+      // Reset form and close modal after a short delay to show success
+      setTimeout(() => {
+        setIsUserModalOpen(false);
+        setEditingUser(null);
+        setUserFormData({ name: '', username: '', password: '', function: '', role: 'usuario', status: 'active' });
+        setSaveStatus('idle');
+        setErrorMessage('');
+      }, 1500);
+
+    } catch (err: any) {
+      console.error('Erro ao salvar usuário:', err);
       setSaveStatus('error');
-      setErrorMessage('Erro ao salvar usuário.');
+      setErrorMessage(err.message || 'Erro ao salvar usuário. Tente novamente.');
     } finally {
       setUserLoading(false);
     }
@@ -813,12 +828,19 @@ export const Settings = () => {
         </section>
 
         <div className="flex flex-col gap-4 pt-4">
-          {(saveStatus === 'error' || settingsLoading) && errorMessage && (
+          {/* Display messages for settings saving */}
+          {(saveStatus === 'error' || saveStatus === 'success' || settingsLoading) && errorMessage && (
             <div className={`p-4 rounded-2xl text-sm font-bold border animate-shake ${
-              settingsLoading ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-red-50 text-red-600 border-red-100'
+              settingsLoading ? 'bg-blue-50 text-blue-600 border-blue-100' : 
+              saveStatus === 'success' ? 'bg-green-50 text-green-600 border-green-100' :
+              'bg-red-50 text-red-600 border-red-100'
             }`}>
-              {settingsLoading && <Loader2 className="w-4 h-4 animate-spin inline mr-2" />}
-              {errorMessage}
+              <div className="flex items-center gap-3">
+                {settingsLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 
+                 saveStatus === 'success' ? <CheckCircle className="w-5 h-5" /> : 
+                 <XCircle className="w-5 h-5" />}
+                {errorMessage}
+              </div>
             </div>
           )}
           
@@ -865,6 +887,15 @@ export const Settings = () => {
                 <XCircle className="w-6 h-6 text-[var(--text-muted)]/50" />
               </button>
             </div>
+
+            {errorMessage && (
+              <div className={`mb-6 p-4 rounded-2xl flex items-center gap-3 text-sm font-bold animate-in fade-in slide-in-from-top-4 ${
+                saveStatus === 'success' ? 'bg-green-500/10 border border-green-500/20 text-green-500' : 'bg-red-500/10 border border-red-500/20 text-red-500'
+              }`}>
+                {saveStatus === 'success' ? <CheckCircle className="w-5 h-5 shrink-0" /> : <XCircle className="w-5 h-5 shrink-0" />}
+                {errorMessage}
+              </div>
+            )}
             
             <form onSubmit={handleUserSubmit} className="space-y-4">
               <div>
