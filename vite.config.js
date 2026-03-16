@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => {
   const isProduction = mode === 'production';
   
   return {
-    base: isProduction ? '/CronogramaSEC/' : '/',
+    base: isProduction ? '/AgendaHenriqueGois/' : '/',
     plugins: [react(), tailwindcss()],
     server: {
       port: 3000,

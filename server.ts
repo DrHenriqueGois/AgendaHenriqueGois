@@ -15,12 +15,12 @@ dotenv.config();
 
 // Configure Firebase for server-side settings fetching
 const firebaseConfig = {
-  apiKey: process.env.VITE_FIREBASE_API_KEY || "AIzaSyD0n_CaZPieu8UvFJlY1RZUi7CztAvfb34",
-  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || "cronogramasec.firebaseapp.com",
-  projectId: process.env.VITE_FIREBASE_PROJECT_ID || "cronogramasec",
-  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || "cronogramasec.appspot.com",
-  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "848884905231",
-  appId: process.env.VITE_FIREBASE_APP_ID || "1:848884905231:web:5876c6f1c529121d303a7a",
+  apiKey: process.env.VITE_FIREBASE_API_KEY || "AIzaSyC-EQpNyvXEimXuXleikf540N0gukaSt4k",
+  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || "henriquegois-e47ff.firebaseapp.com",
+  projectId: process.env.VITE_FIREBASE_PROJECT_ID || "henriquegois-e47ff",
+  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || "henriquegois-e47ff.firebasestorage.app",
+  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "724291663672",
+  appId: process.env.VITE_FIREBASE_APP_ID || "1:724291663672:web:b1f9ee28c2c139334333cd",
 };
 
 const firebaseApp = initializeApp(firebaseConfig);
