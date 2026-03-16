@@ -6,15 +6,6 @@ import { Palette, Type as TypeIcon, Image as ImageIcon, Instagram, LogOut, Save,
 import { motion } from 'motion/react';
 import { pushNotificationService } from '../services/pushNotificationService';
 
-const IMAGE_KEYS_MAP: Record<string, string> = {
-  faviconUrl: 'favicon',
-  logoTitleUrl: 'logoCabecalho',
-  logoLoginTopUrl: 'logoLoginTopo',
-  loginBackgroundUrl: 'fundoLogin',
-  logoLoginBottomUrl: 'logoLoginBase',
-  headerImageUrl: 'bannerCabecalho',
-};
-
 export const Settings = () => {
   const { user, teamMember, teamMembers, settings, logout, refreshSettings } = useAuth();
   const [settingsLoading, setSettingsLoading] = useState(false);
@@ -376,82 +367,87 @@ export const Settings = () => {
             <h3 className="text-lg md:text-xl font-black text-[var(--text-main)] tracking-tight">Identidade Visual</h3>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-[var(--text-muted)] mb-2">Nome do Aplicativo</label>
-                <div className="relative">
-                  <TypeIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
-                  <input
-                    type="text"
-                    className="w-full pl-10 pr-4 py-3 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-xl outline-none focus:ring-2 focus:ring-primary transition-all text-[var(--text-main)]"
-                    value={formData.appName}
-                    onChange={(e) => setFormData({ ...formData, appName: e.target.value })}
-                  />
+          <div className="grid grid-cols-1 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-[var(--text-muted)] mb-2">Nome do Aplicativo</label>
+                  <div className="relative">
+                    <TypeIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+                    <input
+                      type="text"
+                      className="w-full pl-10 pr-4 py-3 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-xl outline-none focus:ring-2 focus:ring-primary transition-all text-[var(--text-main)]"
+                      value={formData.appName}
+                      onChange={(e) => setFormData({ ...formData, appName: e.target.value })}
+                    />
+                  </div>
                 </div>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-[var(--text-muted)] mb-2">Título da Aba (Browser)</label>
-                <div className="relative">
-                  <TypeIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
-                  <input
-                    type="text"
-                    placeholder="Ex: Meu Cronograma - Home"
-                    className="w-full pl-10 pr-4 py-3 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-xl outline-none focus:ring-2 focus:ring-primary transition-all text-[var(--text-main)]"
-                    value={formData.tabTitle}
-                    onChange={(e) => setFormData({ ...formData, tabTitle: e.target.value })}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-[var(--text-muted)] mb-2">Cor Primária</label>
-                <div className="flex items-center gap-4">
-                  <input
-                    type="color"
-                    className="w-14 h-14 rounded-xl border-none cursor-pointer shadow-sm"
-                    value={formData.primaryColor}
-                    onChange={(e) => setFormData({ ...formData, primaryColor: e.target.value })}
-                  />
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Hex Code</span>
-                    <span className="text-sm text-[var(--text-main)] font-mono font-bold uppercase">{formData.primaryColor}</span>
+                <div>
+                  <label className="block text-sm font-semibold text-[var(--text-muted)] mb-2">Título da Aba (Browser)</label>
+                  <div className="relative">
+                    <TypeIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+                    <input
+                      type="text"
+                      placeholder="Ex: Meu Cronograma - Home"
+                      className="w-full pl-10 pr-4 py-3 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-xl outline-none focus:ring-2 focus:ring-primary transition-all text-[var(--text-main)]"
+                      value={formData.tabTitle}
+                      onChange={(e) => setFormData({ ...formData, tabTitle: e.target.value })}
+                    />
                   </div>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-[var(--text-muted)] mb-3">Tema do Sistema</label>
-                <div className="flex p-1 bg-[var(--bg-input)] rounded-2xl w-fit">
-                  <button
-                    type="button"
-                    onClick={() => handleThemeChange('light')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                      formData.theme === 'light'
-                        ? 'bg-[var(--bg-card)] text-primary shadow-sm'
-                        : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                    }`}
-                  >
-                    <Sun className="w-4 h-4" />
-                    Claro
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleThemeChange('dark')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                      formData.theme === 'dark'
-                        ? 'bg-[var(--border-strong)] text-[var(--text-main)] shadow-sm'
-                        : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                    }`}
-                  >
-                    <Moon className="w-4 h-4" />
-                    Escuro
-                  </button>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-[var(--text-muted)] mb-2">Cor Primária</label>
+                  <div className="flex items-center gap-4">
+                    <input
+                      type="color"
+                      className="w-14 h-14 rounded-xl border-none cursor-pointer shadow-sm"
+                      value={formData.primaryColor}
+                      onChange={(e) => setFormData({ ...formData, primaryColor: e.target.value })}
+                    />
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Hex Code</span>
+                      <span className="text-sm text-[var(--text-main)] font-mono font-bold uppercase">{formData.primaryColor}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-[var(--text-muted)] mb-3">Tema do Sistema</label>
+                  <div className="flex p-1 bg-[var(--bg-input)] rounded-2xl w-fit">
+                    <button
+                      type="button"
+                      onClick={() => handleThemeChange('light')}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                        formData.theme === 'light'
+                          ? 'bg-[var(--bg-card)] text-primary shadow-sm'
+                          : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                      }`}
+                    >
+                      <Sun className="w-4 h-4" />
+                      Claro
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleThemeChange('dark')}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                        formData.theme === 'dark'
+                          ? 'bg-[var(--border-strong)] text-[var(--text-main)] shadow-sm'
+                          : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                      }`}
+                    >
+                      <Moon className="w-4 h-4" />
+                      Escuro
+                    </button>
+                  </div>
                 </div>
               </div>
-              
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Favicon */}
               <div className="space-y-4">
                 <label className="block text-sm font-semibold text-[var(--text-muted)]">Favicon (Logo da Aba)</label>
                 <div className="flex items-center gap-4 p-4 bg-[var(--bg-input)] rounded-2xl border border-[var(--border-color)]">
@@ -486,6 +482,141 @@ export const Settings = () => {
                       </button>
                     )}
                   </div>
+                </div>
+              </div>
+
+              {/* Logo Cabeçalho */}
+              <div className="space-y-4">
+                <label className="block text-sm font-semibold text-[var(--text-muted)]">Logo do Cabeçalho</label>
+                <div className="flex items-center gap-4 p-4 bg-[var(--bg-input)] rounded-2xl border border-[var(--border-color)]">
+                  <div className="w-12 h-12 bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)] flex items-center justify-center overflow-hidden">
+                    {formData.logoTitleUrl ? (
+                      <img src={formData.logoTitleUrl} className="max-w-full max-h-full object-contain" referrerPolicy="no-referrer" />
+                    ) : (
+                      <ImageIcon className="w-6 h-6 text-[var(--text-muted)]/20" />
+                    )}
+                  </div>
+                  <div className="flex-1 flex flex-col gap-2">
+                    <input 
+                      type="file" 
+                      id="logoTitleUrl"
+                      accept="image/*" 
+                      onChange={(e) => handleLogoUpload(e, 'logoTitleUrl')}
+                      className="hidden"
+                    />
+                    <label 
+                      htmlFor="logoTitleUrl"
+                      className="text-[10px] font-black text-primary uppercase tracking-widest cursor-pointer hover:underline flex items-center gap-1"
+                      style={{ color: settings?.primaryColor }}
+                    >
+                      <UploadCloud className="w-3 h-3" /> Alterar Logo
+                    </label>
+                    {formData.logoTitleUrl && (
+                      <button 
+                        onClick={() => handleRemoveLogo('logoTitleUrl')}
+                        className="text-[10px] font-bold text-red-500 uppercase flex items-center gap-1 hover:underline w-fit"
+                      >
+                        <Trash2 className="w-3 h-3" /> Remover
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">
+                    <span>Tamanho no Cabeçalho</span>
+                    <span className="text-primary" style={{ color: settings?.primaryColor }}>{formData.logoTitleSize}px</span>
+                  </div>
+                  <input type="range" min="10" max="100" value={formData.logoTitleSize} onChange={(e) => setFormData({...formData, logoTitleSize: parseInt(e.target.value)})} className="w-full h-1.5 bg-[var(--border-color)] rounded-lg appearance-none cursor-pointer accent-primary" style={{ accentColor: settings?.primaryColor } as any} />
+                </div>
+              </div>
+
+              {/* Logo Login Topo */}
+              <div className="space-y-4">
+                <label className="block text-sm font-semibold text-[var(--text-muted)]">Logo Login (Topo)</label>
+                <div className="flex items-center gap-4 p-4 bg-[var(--bg-input)] rounded-2xl border border-[var(--border-color)]">
+                  <div className="w-12 h-12 bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)] flex items-center justify-center overflow-hidden">
+                    {formData.logoLoginTopUrl ? (
+                      <img src={formData.logoLoginTopUrl} className="max-w-full max-h-full object-contain" referrerPolicy="no-referrer" />
+                    ) : (
+                      <ImageIcon className="w-6 h-6 text-[var(--text-muted)]/20" />
+                    )}
+                  </div>
+                  <div className="flex-1 flex flex-col gap-2">
+                    <input 
+                      type="file" 
+                      id="logoLoginTopUrl"
+                      accept="image/*" 
+                      onChange={(e) => handleLogoUpload(e, 'logoLoginTopUrl')}
+                      className="hidden"
+                    />
+                    <label 
+                      htmlFor="logoLoginTopUrl"
+                      className="text-[10px] font-black text-primary uppercase tracking-widest cursor-pointer hover:underline flex items-center gap-1"
+                      style={{ color: settings?.primaryColor }}
+                    >
+                      <UploadCloud className="w-3 h-3" /> Alterar Logo
+                    </label>
+                    {formData.logoLoginTopUrl && (
+                      <button 
+                        onClick={() => handleRemoveLogo('logoLoginTopUrl')}
+                        className="text-[10px] font-bold text-red-500 uppercase flex items-center gap-1 hover:underline w-fit"
+                      >
+                        <Trash2 className="w-3 h-3" /> Remover
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">
+                    <span>Tamanho no Login</span>
+                    <span className="text-primary" style={{ color: settings?.primaryColor }}>{formData.logoLoginTopSize}px</span>
+                  </div>
+                  <input type="range" min="40" max="300" value={formData.logoLoginTopSize} onChange={(e) => setFormData({...formData, logoLoginTopSize: parseInt(e.target.value)})} className="w-full h-1.5 bg-[var(--border-color)] rounded-lg appearance-none cursor-pointer accent-primary" style={{ accentColor: settings?.primaryColor } as any} />
+                </div>
+              </div>
+
+              {/* Logo Login Base */}
+              <div className="space-y-4">
+                <label className="block text-sm font-semibold text-[var(--text-muted)]">Logo Login (Base)</label>
+                <div className="flex items-center gap-4 p-4 bg-[var(--bg-input)] rounded-2xl border border-[var(--border-color)]">
+                  <div className="w-12 h-12 bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)] flex items-center justify-center overflow-hidden">
+                    {formData.logoLoginBottomUrl ? (
+                      <img src={formData.logoLoginBottomUrl} className="max-w-full max-h-full object-contain" referrerPolicy="no-referrer" />
+                    ) : (
+                      <ImageIcon className="w-6 h-6 text-[var(--text-muted)]/20" />
+                    )}
+                  </div>
+                  <div className="flex-1 flex flex-col gap-2">
+                    <input 
+                      type="file" 
+                      id="logoLoginBottomUrl"
+                      accept="image/*" 
+                      onChange={(e) => handleLogoUpload(e, 'logoLoginBottomUrl')}
+                      className="hidden"
+                    />
+                    <label 
+                      htmlFor="logoLoginBottomUrl"
+                      className="text-[10px] font-black text-primary uppercase tracking-widest cursor-pointer hover:underline flex items-center gap-1"
+                      style={{ color: settings?.primaryColor }}
+                    >
+                      <UploadCloud className="w-3 h-3" /> Alterar Logo
+                    </label>
+                    {formData.logoLoginBottomUrl && (
+                      <button 
+                        onClick={() => handleRemoveLogo('logoLoginBottomUrl')}
+                        className="text-[10px] font-bold text-red-500 uppercase flex items-center gap-1 hover:underline w-fit"
+                      >
+                        <Trash2 className="w-3 h-3" /> Remover
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">
+                    <span>Tamanho no Rodapé</span>
+                    <span className="text-primary" style={{ color: settings?.primaryColor }}>{formData.logoLoginBottomSize}px</span>
+                  </div>
+                  <input type="range" min="20" max="150" value={formData.logoLoginBottomSize} onChange={(e) => setFormData({...formData, logoLoginBottomSize: parseInt(e.target.value)})} className="w-full h-1.5 bg-[var(--border-color)] rounded-lg appearance-none cursor-pointer accent-primary" style={{ accentColor: settings?.primaryColor } as any} />
                 </div>
               </div>
             </div>
@@ -618,241 +749,7 @@ export const Settings = () => {
           </div>
         </section>
 
-        {/* Gerenciamento de Logos Simplificado */}
-        <section className="bg-[var(--bg-card)] rounded-3xl p-6 md:p-8 border border-[var(--border-color)] shadow-sm">
-          <div className="flex items-center gap-3 mb-8 text-primary">
-            <div className="p-2 bg-primary/10 rounded-xl">
-              <ImageIcon className="w-5 h-5 md:w-6 md:h-6" />
-            </div>
-            <h3 className="text-lg md:text-xl font-black text-[var(--text-main)] tracking-tight">Gerenciamento de Logos</h3>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-            {/* Logo Cabeçalho */}
-            <div className="p-5 md:p-6 bg-[var(--bg-input)] rounded-3xl border border-[var(--border-color)] space-y-4">
-              <div className="flex justify-between items-center">
-                <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Logo do Cabeçalho</label>
-                {formData.logoTitleUrl && (
-                  <span className="text-[9px] font-bold text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full">Visualização Ativa</span>
-                )}
-              </div>
-              <div className="w-full aspect-video bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] flex items-center justify-center overflow-hidden relative group/preview">
-                {formData.logoTitleUrl ? (
-                  <div className="flex items-center justify-center w-full h-full p-4" style={{ backgroundColor: 'rgba(var(--primary-color-rgb), 0.03)' }}>
-                    <img 
-                      src={formData.logoTitleUrl} 
-                      className="max-w-full max-h-full object-contain transition-transform group-hover/preview:scale-105" 
-                      style={{ height: `${formData.logoTitleSize}px` }}
-                      referrerPolicy="no-referrer" 
-                    />
-                  </div>
-                ) : (
-                  <ImageIcon className="w-8 h-8 md:w-12 md:h-12 text-[var(--text-muted)]/20" />
-                )}
-              </div>
-              <div className="flex flex-col gap-3">
-                <input 
-                  type="file" 
-                  id="logoTitleUrl"
-                  accept="image/*" 
-                  onChange={(e) => handleLogoUpload(e, 'logoTitleUrl')} 
-                  className="hidden"
-                />
-                <label 
-                  htmlFor="logoTitleUrl"
-                  className="w-full flex items-center justify-center gap-2 py-3 bg-primary text-white rounded-xl font-black uppercase tracking-widest text-[10px] cursor-pointer hover:opacity-90 transition-all shadow-lg shadow-primary/10"
-                  style={{ backgroundColor: settings?.primaryColor }}
-                >
-                  <UploadCloud className="w-4 h-4" /> Escolher Logo
-                </label>
-                
-                <div className="space-y-2 pt-2">
-                  <div className="flex justify-between text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">
-                    <span>Ajustar Tamanho</span>
-                    <span className="text-primary" style={{ color: settings?.primaryColor }}>{formData.logoTitleSize}px</span>
-                  </div>
-                  <input type="range" min="10" max="200" value={formData.logoTitleSize} onChange={(e) => setFormData({...formData, logoTitleSize: parseInt(e.target.value)})} className="w-full h-1.5 bg-[var(--border-color)] rounded-lg appearance-none cursor-pointer accent-primary" style={{ accentColor: settings?.primaryColor } as any} />
-                </div>
-                
-                {formData.logoTitleUrl && (
-                  <button onClick={() => handleRemoveLogo('logoTitleUrl')} className="text-[10px] font-black text-red-500 uppercase flex items-center justify-center gap-1 hover:underline tracking-widest pt-2"><Trash2 className="w-3 h-3" /> Remover Logo</button>
-                )}
-              </div>
-            </div>
-
-            {/* Logo Login Topo */}
-            <div className="p-5 md:p-6 bg-[var(--bg-input)] rounded-3xl border border-[var(--border-color)] space-y-4">
-              <div className="flex justify-between items-center">
-                <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Logo Login (Topo)</label>
-                {formData.logoLoginTopUrl && (
-                  <span className="text-[9px] font-bold text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full">Visualização Ativa</span>
-                )}
-              </div>
-              <div className="w-full aspect-video bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] flex items-center justify-center overflow-hidden relative group/preview">
-                {formData.logoLoginTopUrl ? (
-                  <img 
-                    src={formData.logoLoginTopUrl} 
-                    className="max-w-[80%] max-h-[80%] object-contain transition-transform group-hover/preview:scale-105" 
-                    style={{ height: `${formData.logoLoginTopSize}px` }}
-                    referrerPolicy="no-referrer" 
-                  />
-                ) : (
-                  <ImageIcon className="w-8 h-8 md:w-12 md:h-12 text-[var(--text-muted)]/20" />
-                )}
-              </div>
-              <div className="flex-col flex gap-3">
-                <input 
-                  type="file" 
-                  id="logoLoginTopUrl"
-                  accept="image/*" 
-                  onChange={(e) => handleLogoUpload(e, 'logoLoginTopUrl')} 
-                  className="hidden"
-                />
-                <label 
-                  htmlFor="logoLoginTopUrl"
-                  className="w-full flex items-center justify-center gap-2 py-3 bg-primary text-white rounded-xl font-black uppercase tracking-widest text-[10px] cursor-pointer hover:opacity-90 transition-all shadow-lg shadow-primary/10"
-                  style={{ backgroundColor: settings?.primaryColor }}
-                >
-                  <UploadCloud className="w-4 h-4" /> Escolher Logo
-                </label>
-                
-                <div className="space-y-2 pt-2">
-                  <div className="flex justify-between text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">
-                    <span>Ajustar Tamanho</span>
-                    <span className="text-primary" style={{ color: settings?.primaryColor }}>{formData.logoLoginTopSize}px</span>
-                  </div>
-                  <input type="range" min="10" max="300" value={formData.logoLoginTopSize} onChange={(e) => setFormData({...formData, logoLoginTopSize: parseInt(e.target.value)})} className="w-full h-1.5 bg-[var(--border-color)] rounded-lg appearance-none cursor-pointer accent-primary" style={{ accentColor: settings?.primaryColor } as any} />
-                </div>
-                
-                {formData.logoLoginTopUrl && (
-                  <button onClick={() => handleRemoveLogo('logoLoginTopUrl')} className="text-[10px] font-black text-red-500 uppercase flex items-center justify-center gap-1 hover:underline tracking-widest pt-2"><Trash2 className="w-3 h-3" /> Remover Logo</button>
-                )}
-              </div>
-            </div>
-
-            {/* Logo Login Base */}
-            <div className="p-5 md:p-6 bg-[var(--bg-input)] rounded-3xl border border-[var(--border-color)] space-y-4">
-              <div className="flex justify-between items-center">
-                <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Logo Login (Base)</label>
-                {formData.logoLoginBottomUrl && (
-                  <span className="text-[9px] font-bold text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full">Visualização Ativa</span>
-                )}
-              </div>
-              <div className="w-full aspect-video bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] flex items-center justify-center overflow-hidden relative group/preview">
-                {formData.logoLoginBottomUrl ? (
-                  <img 
-                    src={formData.logoLoginBottomUrl} 
-                    className="max-w-[80%] max-h-[80%] object-contain transition-transform group-hover/preview:scale-105" 
-                    style={{ height: `${formData.logoLoginBottomSize}px` }}
-                    referrerPolicy="no-referrer" 
-                  />
-                ) : (
-                  <ImageIcon className="w-8 h-8 md:w-12 md:h-12 text-[var(--text-muted)]/20" />
-                )}
-              </div>
-              <div className="flex flex-col gap-3">
-                <input 
-                  type="file" 
-                  id="logoLoginBottomUrl"
-                  accept="image/*" 
-                  onChange={(e) => handleLogoUpload(e, 'logoLoginBottomUrl')} 
-                  className="hidden"
-                />
-                <label 
-                  htmlFor="logoLoginBottomUrl"
-                  className="w-full flex items-center justify-center gap-2 py-3 bg-primary text-white rounded-xl font-black uppercase tracking-widest text-[10px] cursor-pointer hover:opacity-90 transition-all shadow-lg shadow-primary/10"
-                  style={{ backgroundColor: settings?.primaryColor }}
-                >
-                  <UploadCloud className="w-4 h-4" /> Escolher Logo
-                </label>
-                
-                <div className="space-y-2 pt-2">
-                  <div className="flex justify-between text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">
-                    <span>Ajustar Tamanho</span>
-                    <span className="text-primary" style={{ color: settings?.primaryColor }}>{formData.logoLoginBottomSize}px</span>
-                  </div>
-                  <input type="range" min="10" max="200" value={formData.logoLoginBottomSize} onChange={(e) => setFormData({...formData, logoLoginBottomSize: parseInt(e.target.value)})} className="w-full h-1.5 bg-[var(--border-color)] rounded-lg appearance-none cursor-pointer accent-primary" style={{ accentColor: settings?.primaryColor } as any} />
-                </div>
-                
-                {formData.logoLoginBottomUrl && (
-                  <button onClick={() => handleRemoveLogo('logoLoginBottomUrl')} className="text-[10px] font-black text-red-500 uppercase flex items-center justify-center gap-1 hover:underline tracking-widest pt-2"><Trash2 className="w-3 h-3" /> Remover Logo</button>
-                )}
-              </div>
-            </div>
-
-            {/* Imagem de Fundo (Login) */}
-            <div className="p-5 md:p-6 bg-[var(--bg-input)] rounded-3xl border border-[var(--border-color)] space-y-4">
-              <div className="flex justify-between items-center">
-                <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Imagem de Fundo (Login)</label>
-                {formData.loginBackgroundUrl && (
-                  <span className="text-[9px] font-bold text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full">Visualização Ativa</span>
-                )}
-              </div>
-              <div className="w-full aspect-video bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] flex items-center justify-center overflow-hidden relative group/preview">
-                {formData.loginBackgroundUrl ? (
-                  <img src={formData.loginBackgroundUrl} className="w-full h-full object-cover transition-transform group-hover/preview:scale-105" referrerPolicy="no-referrer" />
-                ) : (
-                  <ImageIcon className="w-8 h-8 md:w-12 md:h-12 text-[var(--text-muted)]/20" />
-                )}
-              </div>
-              <div className="flex flex-col gap-3">
-                <input 
-                  type="file" 
-                  id="loginBackgroundUrl"
-                  accept="image/*" 
-                  onChange={(e) => handleLogoUpload(e, 'loginBackgroundUrl')} 
-                  className="hidden"
-                />
-                <label 
-                  htmlFor="loginBackgroundUrl"
-                  className="w-full flex items-center justify-center gap-2 py-3 bg-primary text-white rounded-xl font-black uppercase tracking-widest text-[10px] cursor-pointer hover:opacity-90 transition-all shadow-lg shadow-primary/10"
-                  style={{ backgroundColor: settings?.primaryColor }}
-                >
-                  <UploadCloud className="w-4 h-4" /> Escolher Fundo
-                </label>
-                {formData.loginBackgroundUrl && (
-                  <button onClick={() => handleRemoveLogo('loginBackgroundUrl')} className="text-[10px] font-black text-red-500 uppercase flex items-center justify-center gap-1 hover:underline tracking-widest pt-2"><Trash2 className="w-3 h-3" /> Remover Fundo</button>
-                )}
-              </div>
-            </div>
-
-            {/* Imagem de Cabeçalho (Banner) */}
-            <div className="p-5 md:p-6 bg-[var(--bg-input)] rounded-3xl border border-[var(--border-color)] space-y-4">
-              <div className="flex justify-between items-center">
-                <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Imagem de Cabeçalho (Banner)</label>
-                {formData.headerImageUrl && (
-                  <span className="text-[9px] font-bold text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full">Visualização Ativa</span>
-                )}
-              </div>
-              <div className="w-full aspect-video bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] flex items-center justify-center overflow-hidden relative group/preview">
-                {formData.headerImageUrl ? (
-                  <img src={formData.headerImageUrl} className="w-full h-full object-cover transition-transform group-hover/preview:scale-105" referrerPolicy="no-referrer" />
-                ) : (
-                  <ImageIcon className="w-8 h-8 md:w-12 md:h-12 text-[var(--text-muted)]/20" />
-                )}
-              </div>
-              <div className="flex flex-col gap-3">
-                <input 
-                  type="file" 
-                  id="headerImageUrl"
-                  accept="image/*" 
-                  onChange={(e) => handleLogoUpload(e, 'headerImageUrl')} 
-                  className="hidden"
-                />
-                <label 
-                  htmlFor="headerImageUrl"
-                  className="w-full flex items-center justify-center gap-2 py-3 bg-primary text-white rounded-xl font-black uppercase tracking-widest text-[10px] cursor-pointer hover:opacity-90 transition-all shadow-lg shadow-primary/10"
-                  style={{ backgroundColor: settings?.primaryColor }}
-                >
-                  <UploadCloud className="w-4 h-4" /> Escolher Banner
-                </label>
-                {formData.headerImageUrl && (
-                  <button onClick={() => handleRemoveLogo('headerImageUrl')} className="text-[10px] font-black text-red-500 uppercase flex items-center justify-center gap-1 hover:underline tracking-widest pt-2"><Trash2 className="w-3 h-3" /> Remover Banner</button>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
 
         {/* Redes Sociais */}
         <section className="bg-[var(--bg-card)] rounded-3xl p-8 border border-[var(--border-color)] shadow-sm">

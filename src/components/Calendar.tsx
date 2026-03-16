@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, List as ListIcon, LayoutGrid, Edit2, Trash2, Users, Loader2, Clock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, List as ListIcon, LayoutGrid, Edit2, Trash2, Users, Loader2, Clock, Share2 } from 'lucide-react';
 import { collection, query, where, onSnapshot, Timestamp, deleteDoc, doc, getDocs } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -109,6 +109,27 @@ export const Calendar = ({ onAddActivity, onEditActivity }: CalendarProps) => {
       case 'pending': return 'Pendente';
       default: return status;
     }
+  };
+
+  const handleShare = (activity: any) => {
+    const date = activity.date.toDate();
+    const formattedDate = format(date, "dd/MM/yyyy");
+    const formattedTime = format(date, "HH:mm");
+    const collaboratorNames = (activity.collaboratorIds || [])
+      .map((id: string) => teamMembers.find(m => m.id === id)?.name || 'Usuário')
+      .join('\n');
+
+    const message = `*Título:* ${activity.title}
+${activity.description ? `*Descrição:* ${activity.description}\n` : ''}
+*Equipe envolvida:*
+${collaboratorNames}
+
+*Data:* ${formattedDate}
+*Horário:* ${formattedTime}
+*Prioridade:* ${getPriorityLabel(activity.priority)}`;
+
+    const encodedMessage = encodeURIComponent(message);
+    window.open(`https://api.whatsapp.com/send?text=${encodedMessage}`, '_blank');
   };
 
   const next = () => {
@@ -306,12 +327,21 @@ export const Calendar = ({ onAddActivity, onEditActivity }: CalendarProps) => {
                         </div>
                       </div>
                     </div>
-                    <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                      activity.priority === 'high' ? 'bg-red-500/10 text-red-500' :
-                      activity.priority === 'medium' ? 'bg-orange-500/10 text-orange-500' :
-                      'bg-blue-500/10 text-blue-500'
-                    }`}>
-                      {getPriorityLabel(activity.priority)}
+                    <div className="flex items-center gap-2">
+                      <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                        activity.priority === 'high' ? 'bg-red-500/10 text-red-500' :
+                        activity.priority === 'medium' ? 'bg-orange-500/10 text-orange-500' :
+                        'bg-blue-500/10 text-blue-500'
+                      }`}>
+                        {getPriorityLabel(activity.priority)}
+                      </div>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleShare(activity); }}
+                        className="p-1 rounded-lg text-[var(--text-muted)]/50 hover:text-green-500 hover:bg-green-500/10 transition-all active:scale-90"
+                        title="Compartilhar"
+                      >
+                        <Share2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
                 )) : (
@@ -348,7 +378,16 @@ export const Calendar = ({ onAddActivity, onEditActivity }: CalendarProps) => {
                       <h4 className="font-bold text-[var(--text-main)]">{activity.title}</h4>
                       <p className="text-sm text-[var(--text-muted)] mt-1">{activity.description}</p>
                     </div>
-                    <span className="text-xs font-bold text-[var(--text-muted)]">{format(activity.date.toDate(), 'HH:mm')}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-[var(--text-muted)]">{format(activity.date.toDate(), 'HH:mm')}</span>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleShare(activity); }}
+                        className="p-1.5 rounded-lg text-[var(--text-muted)]/50 hover:text-green-500 hover:bg-green-500/10 transition-all active:scale-90"
+                        title="Compartilhar"
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                   <div className="flex flex-col gap-2 mt-3">
                     <div className="flex flex-wrap items-center gap-2">
@@ -419,7 +458,7 @@ export const Calendar = ({ onAddActivity, onEditActivity }: CalendarProps) => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <h4 className="font-bold text-[var(--text-main)] group-hover:text-primary transition-colors truncate">{activity.title}</h4>
+                      <h4 className="font-bold text-[var(--text-main)] group-hover:text-primary transition-colors">{activity.title}</h4>
                       {activity.description && <p className="text-xs md:text-sm text-[var(--text-muted)] mt-1">{activity.description}</p>}
                       {activity.recurrence && activity.recurrence !== 'none' && (
                         <p className="text-[8px] font-black text-primary uppercase tracking-widest mt-2 flex items-center gap-1">
@@ -434,6 +473,13 @@ export const Calendar = ({ onAddActivity, onEditActivity }: CalendarProps) => {
                       </span>
                       {(!!user || !!teamMember) && (
                         <div className="flex items-center gap-1">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleShare(activity); }}
+                            className="p-1.5 md:p-2 rounded-lg text-[var(--text-muted)]/50 hover:text-green-500 hover:bg-green-500/10 transition-all active:scale-90"
+                            title="Compartilhar atividade"
+                          >
+                            <Share2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                          </button>
                           <button 
                             onClick={(e) => { e.stopPropagation(); onEditActivity(activity); }}
                             className="p-1.5 md:p-2 rounded-lg text-[var(--text-muted)]/50 hover:text-primary hover:bg-primary/5 transition-all active:scale-90"

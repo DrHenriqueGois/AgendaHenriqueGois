@@ -3,7 +3,7 @@ import { collection, query, where, onSnapshot, orderBy, updateDoc, doc, deleteDo
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { format, isAfter, startOfDay, isSameDay } from 'date-fns';
-import { Search, Calendar as CalendarIcon, Clock, Trash2, CheckCircle2, AlertCircle, Edit2, Users, StickyNote, Plus, Save, X, Loader2, Star } from 'lucide-react';
+import { Search, Calendar as CalendarIcon, Clock, Trash2, CheckCircle2, AlertCircle, Edit2, Users, StickyNote, Plus, Save, X, Loader2, Star, Share2 } from 'lucide-react';
 
 export const ActivityList = ({ onEditActivity }: { onEditActivity: (activity: any) => void }) => {
   const { user, teamMember } = useAuth();
@@ -138,6 +138,27 @@ export const ActivityList = ({ onEditActivity }: { onEditActivity: (activity: an
       case 'low': return 'Baixa';
       default: return priority;
     }
+  };
+
+  const handleShare = (activity: any) => {
+    const activityDate = activity.date?.toDate?.() || new Date();
+    const formattedDate = format(activityDate, "dd/MM/yyyy");
+    const formattedTime = format(activityDate, "HH:mm");
+    const collaboratorNames = (activity.collaboratorIds || [])
+      .map((id: string) => teamMembers.find(m => m.id === id)?.name || 'Usuário')
+      .join('\n');
+
+    const message = `*Título:* ${activity.title}
+${activity.description ? `*Descrição:* ${activity.description}\n` : ''}
+*Equipe envolvida:*
+${collaboratorNames}
+
+*Data:* ${formattedDate}
+*Horário:* ${formattedTime}
+*Prioridade:* ${getPriorityLabel(activity.priority)}`;
+
+    const encodedMessage = encodeURIComponent(message);
+    window.open(`https://api.whatsapp.com/send?text=${encodedMessage}`, '_blank');
   };
 
   const filteredActivities = activities.filter((a: any) => {
@@ -288,7 +309,7 @@ export const ActivityList = ({ onEditActivity }: { onEditActivity: (activity: an
                   <div className="flex-1 flex flex-col min-w-0">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1 min-w-0">
-                        <h3 className={`font-black ${colors.text} text-base md:text-lg group-hover:text-primary transition-colors truncate`}>{activity.title}</h3>
+                        <h3 className={`font-black ${colors.text} text-base md:text-lg group-hover:text-primary transition-colors`}>{activity.title}</h3>
                         <p className="text-[11px] md:text-xs text-[var(--text-muted)] mt-1 font-medium leading-relaxed">{activity.description || 'Sem descrição'}</p>
                         {activity.recurrence && activity.recurrence !== 'none' && (
                           <p className="text-[9px] font-black text-primary uppercase tracking-widest mt-2 flex items-center gap-1">
@@ -328,6 +349,13 @@ export const ActivityList = ({ onEditActivity }: { onEditActivity: (activity: an
                         </div>
 
                         <div className="flex items-center gap-0.5 md:gap-1">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleShare(activity); }}
+                            className="p-2 md:p-2.5 rounded-lg md:rounded-2xl text-[var(--text-muted)] hover:text-green-500 hover:bg-green-500/10 transition-all active:scale-90"
+                            title="Compartilhar atividade"
+                          >
+                            <Share2 className="w-4 h-4 md:w-5 md:h-5" />
+                          </button>
                           {(!!user || !!teamMember) && (
                             <button 
                               onClick={() => onEditActivity(activity)}

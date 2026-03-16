@@ -95,6 +95,7 @@ export const Login = () => {
                 alt="Logo Superior" 
                 className="object-contain max-w-full" 
                 style={{ height: `${(settings?.logoLoginTopSize || 120) * (window.innerWidth < 768 ? 0.7 : 0.9)}px` }}
+                referrerPolicy="no-referrer"
                 onError={(e) => {
                   console.error('Erro ao carregar logo superior do login');
                   (e.target as HTMLImageElement).style.display = 'none';
@@ -181,6 +182,7 @@ export const Login = () => {
                 alt="Logo Inferior" 
                 className="object-contain max-w-full opacity-80 hover:opacity-100 transition-opacity" 
                 style={{ height: `${(settings?.logoLoginBottomSize || 40) * (window.innerWidth < 768 ? 0.7 : 0.9)}px` }}
+                referrerPolicy="no-referrer"
                 onError={(e) => {
                   console.error('Erro ao carregar logo inferior do login');
                   (e.target as HTMLImageElement).style.display = 'none';
