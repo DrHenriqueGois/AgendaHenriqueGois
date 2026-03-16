@@ -1,18 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Login } from './components/Login';
-import { Calendar } from './components/Calendar';
-import { ActivityList } from './components/ActivityList';
-import { Settings } from './components/Settings';
-import { Birthdays } from './components/Birthdays';
-import { ActivityModal } from './components/ActivityModal';
-import { Notifications } from './components/Notifications';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Home, ListTodo, Settings as SettingsIcon, Plus, Loader2, Bell, LogOut, Cake, Sun, Moon, X } from 'lucide-react';
 import { collection, query, where, onSnapshot, Timestamp, addDoc, getDocs } from 'firebase/firestore';
 import { db } from './lib/firebase';
 import { startOfDay, endOfDay } from 'date-fns';
 import { pushNotificationService } from './services/pushNotificationService';
+
+// Lazy load components for better performance
+const Calendar = lazy(() => import('./components/Calendar').then(module => ({ default: module.Calendar })));
+const ActivityList = lazy(() => import('./components/ActivityList').then(module => ({ default: module.ActivityList })));
+const Settings = lazy(() => import('./components/Settings').then(module => ({ default: module.Settings })));
+const Birthdays = lazy(() => import('./components/Birthdays').then(module => ({ default: module.Birthdays })));
+const ActivityModal = lazy(() => import('./components/ActivityModal').then(module => ({ default: module.ActivityModal })));
+const Notifications = lazy(() => import('./components/Notifications').then(module => ({ default: module.Notifications })));
 
 function AppContent() {
   const { user, teamMember, loading, settings, logout } = useAuth();
@@ -272,21 +274,28 @@ function AppContent() {
       <main className="flex-1 p-3 md:p-8 overflow-y-auto no-scrollbar flex justify-center pb-28 md:pb-24">
         <div className="w-full max-w-5xl">
           <ErrorBoundary>
-            {activeTab === 'home' && <Calendar onAddActivity={handleAddActivity} onEditActivity={handleEditActivity} />}
-            {activeTab === 'activities' && <ActivityList onEditActivity={handleEditActivity} />}
-            {activeTab === 'birthdays' && <Birthdays />}
-            {activeTab === 'settings' && (isAdmin ? <Settings /> : <div className="text-center py-20"><h2 className="text-xl font-bold text-[var(--text-main)]">Acesso Restrito</h2><p className="text-[var(--text-muted)]">Você não tem permissão para acessar esta área.</p></div>)}
-            
-            {isModalOpen && (
-              <ActivityModal 
-                date={selectedDate} 
-                activity={editingActivity}
-                onClose={() => {
-                  setIsModalOpen(false);
-                  setEditingActivity(null);
-                }} 
-              />
-            )}
+            <Suspense fallback={
+              <div className="flex flex-col items-center justify-center py-20 gap-4">
+                <Loader2 className="w-12 h-12 text-primary animate-spin" />
+                <p className="text-[var(--text-muted)] font-bold uppercase tracking-widest text-xs">Carregando...</p>
+              </div>
+            }>
+              {activeTab === 'home' && <Calendar onAddActivity={handleAddActivity} onEditActivity={handleEditActivity} />}
+              {activeTab === 'activities' && <ActivityList onEditActivity={handleEditActivity} />}
+              {activeTab === 'birthdays' && <Birthdays />}
+              {activeTab === 'settings' && (isAdmin ? <Settings /> : <div className="text-center py-20"><h2 className="text-xl font-bold text-[var(--text-main)]">Acesso Restrito</h2><p className="text-[var(--text-muted)]">Você não tem permissão para acessar esta área.</p></div>)}
+              
+              {isModalOpen && (
+                <ActivityModal 
+                  date={selectedDate} 
+                  activity={editingActivity}
+                  onClose={() => {
+                    setIsModalOpen(false);
+                    setEditingActivity(null);
+                  }} 
+                />
+              )}
+            </Suspense>
           </ErrorBoundary>
         </div>
       </main>
@@ -314,7 +323,11 @@ function AppContent() {
         </div>
       </nav>
 
-      {isNotificationsOpen && <Notifications onClose={() => setIsNotificationsOpen(false)} />}
+      {isNotificationsOpen && (
+        <Suspense fallback={null}>
+          <Notifications onClose={() => setIsNotificationsOpen(false)} />
+        </Suspense>
+      )}
 
       {/* Push Notification Prompt */}
       {showPushPrompt && (

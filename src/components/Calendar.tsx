@@ -3,7 +3,7 @@ import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInte
 import { ptBR } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, List as ListIcon, LayoutGrid, Edit2, Trash2, Users, Loader2, Clock } from 'lucide-react';
 import { collection, query, where, onSnapshot, Timestamp, deleteDoc, doc, getDocs } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, auth } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 
 interface CalendarProps {
@@ -12,13 +12,12 @@ interface CalendarProps {
 }
 
 export const Calendar = ({ onAddActivity, onEditActivity }: CalendarProps) => {
-  const { user, teamMember, settings } = useAuth();
+  const { user, teamMember, teamMembers, settings } = useAuth();
   const today = new Date();
   const [currentDate, setCurrentDate] = useState(today);
   const [selectedDate, setSelectedDate] = useState(today);
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
   const [activities, setActivities] = useState<any[]>([]);
-  const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [activityToDelete, setActivityToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const activitiesRef = React.useRef<HTMLDivElement>(null);
@@ -28,15 +27,6 @@ export const Calendar = ({ onAddActivity, onEditActivity }: CalendarProps) => {
       activitiesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [selectedDate]);
-
-  useEffect(() => {
-    const fetchMembers = async () => {
-      const snapshot = await getDocs(collection(db, 'users'));
-      const members = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setTeamMembers(members);
-    };
-    fetchMembers();
-  }, []);
 
   useEffect(() => {
     if (!user && !teamMember) return;
@@ -68,8 +58,31 @@ export const Calendar = ({ onAddActivity, onEditActivity }: CalendarProps) => {
     try {
       await deleteDoc(doc(db, 'activities', id));
       setActivityToDelete(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      
+      if (err.code === 'permission-denied') {
+        const errInfo = {
+          error: err.message,
+          operationType: 'delete',
+          path: `activities/${id}`,
+          authInfo: {
+            userId: auth.currentUser?.uid,
+            email: auth.currentUser?.email,
+            emailVerified: auth.currentUser?.emailVerified,
+            isAnonymous: auth.currentUser?.isAnonymous,
+            tenantId: auth.currentUser?.tenantId,
+            providerInfo: auth.currentUser?.providerData.map((provider: any) => ({
+              providerId: provider.providerId,
+              displayName: provider.displayName,
+              email: provider.email,
+              photoUrl: provider.photoURL
+            })) || []
+          }
+        };
+        console.error('Firestore Error: ', JSON.stringify(errInfo));
+      }
+
       alert('Erro ao apagar atividade.');
     } finally {
       setIsDeleting(false);

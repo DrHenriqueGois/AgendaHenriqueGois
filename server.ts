@@ -5,82 +5,11 @@ import webpush from "web-push";
 import bodyParser from "body-parser";
 import dotenv from "dotenv";
 import cron from "node-cron";
-import multer from "multer";
-import fs from "fs";
-import { v2 as cloudinary } from "cloudinary";
-import { initializeApp } from "firebase/app";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
 
 dotenv.config();
 
-// Configure Firebase for server-side settings fetching
-const firebaseConfig = {
-  apiKey: process.env.VITE_FIREBASE_API_KEY || "AIzaSyC-EQpNyvXEimXuXleikf540N0gukaSt4k",
-  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || "henriquegois-e47ff.firebaseapp.com",
-  projectId: process.env.VITE_FIREBASE_PROJECT_ID || "henriquegois-e47ff",
-  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || "henriquegois-e47ff.firebasestorage.app",
-  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "724291663672",
-  appId: process.env.VITE_FIREBASE_APP_ID || "1:724291663672:web:b1f9ee28c2c139334333cd",
-};
-
-const firebaseApp = initializeApp(firebaseConfig);
-const db = getFirestore(firebaseApp);
-
-async function getCloudinaryConfig() {
-  // Try environment variables first (highest priority)
-  if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
-    return {
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-      api_key: process.env.CLOUDINARY_API_KEY,
-      api_secret: process.env.CLOUDINARY_API_SECRET,
-    };
-  }
-
-  // Try fetching from Firestore settings
-  try {
-    const settingsRef = doc(db, "settings", "app_config");
-    const settingsSnap = await getDoc(settingsRef);
-    
-    if (settingsSnap.exists()) {
-      const data = settingsSnap.data();
-      if (data.cloudinaryCloudName && data.cloudinaryApiKey && data.cloudinaryApiSecret) {
-        console.log("Usando configuração do Cloudinary do Firestore.");
-        return {
-          cloud_name: data.cloudinaryCloudName,
-          api_key: data.cloudinaryApiKey,
-          api_secret: data.cloudinaryApiSecret,
-        };
-      }
-    }
-  } catch (error) {
-    console.error("Erro ao buscar config do Cloudinary no Firestore:", error);
-  }
-
-  return null;
-}
-
 const app = express();
 const PORT = 3000;
-
-// Configure multer for temporary file storage before Cloudinary upload
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(process.cwd(), "temp");
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname));
-  },
-});
-
-const upload = multer({ 
-  storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
-});
 
 // VAPID keys should be in your .env file
 const publicVapidKey = process.env.VITE_VAPID_PUBLIC_KEY;
@@ -94,91 +23,6 @@ if (publicVapidKey && privateVapidKey) {
 }
 
 app.use(bodyParser.json());
-
-// Upload endpoint with Cloudinary integration
-app.post("/api/upload", async (req, res) => {
-  console.log("Recebendo upload para Cloudinary...");
-  
-  // Ensure Cloudinary is configured
-  const config = await getCloudinaryConfig();
-  if (config) {
-    cloudinary.config(config);
-  } else {
-    console.error("Cloudinary não configurado!");
-    return res.status(500).json({ error: "Cloudinary não configurado. Por favor, configure nas configurações do sistema." });
-  }
-
-  upload.single("file")(req, res, async (err) => {
-    if (err instanceof multer.MulterError) {
-      console.error("Erro Multer:", err.code);
-      if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({ error: "O arquivo é muito grande. O limite é de 10MB." });
-      }
-      return res.status(400).json({ error: `Erro no upload: ${err.message}` });
-    } else if (err) {
-      console.error("Erro Upload:", err.message);
-      return res.status(500).json({ error: `Erro interno: ${err.message}` });
-    }
-
-    if (!req.file) {
-      console.warn("Nenhum arquivo recebido.");
-      return res.status(400).json({ error: "Nenhum arquivo enviado." });
-    }
-    
-    try {
-      // Upload to Cloudinary
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: "logos",
-        resource_type: "auto",
-      });
-
-      // Delete temporary file
-      fs.unlinkSync(req.file.path);
-
-      console.log("Upload Cloudinary bem-sucedido:", result.secure_url);
-      res.json({ 
-        url: result.secure_url,
-        public_id: result.public_id
-      });
-    } catch (cloudinaryErr: any) {
-      console.error("Erro Cloudinary:", cloudinaryErr);
-      // Clean up temp file if it exists
-      if (req.file && fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
-      res.status(500).json({ error: "Erro ao enviar para o Cloudinary: " + (cloudinaryErr.message || "Erro desconhecido") });
-    }
-  });
-});
-
-// Delete endpoint for Cloudinary
-app.post("/api/upload/delete", async (req, res) => {
-  const { public_id } = req.body;
-  
-  if (!public_id) {
-    return res.status(400).json({ error: "public_id é obrigatório." });
-  }
-
-  // Ensure Cloudinary is configured
-  const config = await getCloudinaryConfig();
-  if (config) {
-    cloudinary.config(config);
-  } else {
-    return res.status(500).json({ error: "Cloudinary não configurado." });
-  }
-
-  try {
-    console.log(`Deletando recurso do Cloudinary: ${public_id}`);
-    const result = await cloudinary.uploader.destroy(public_id);
-    res.json({ success: true, result });
-  } catch (err: any) {
-    console.error("Erro ao deletar do Cloudinary:", err);
-    res.status(500).json({ error: "Erro ao deletar do Cloudinary: " + (err.message || "Erro desconhecido") });
-  }
-});
-
-// Serve uploaded files (legacy support or other uses)
-app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')));
 
 // In-memory storage for subscriptions (In a real app, save this to Firestore)
 // But since we want it to work even when the site is closed, we need a way to access them.

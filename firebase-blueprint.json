@@ -1,0 +1,61 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Team member or administrator of the system",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Full name of the user"
+        },
+        "username": {
+          "type": "string",
+          "description": "Login username"
+        },
+        "password": {
+          "type": "string",
+          "description": "Access password"
+        },
+        "function": {
+          "type": "string",
+          "description": "Job function or role in the team"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["administrador", "usuario"],
+          "description": "Access level"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "inactive"],
+          "description": "Account status"
+        }
+      },
+      "required": ["name", "username", "password", "role", "status"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "Global application configuration",
+      "type": "object",
+      "properties": {
+        "appName": { "type": "string" },
+        "primaryColor": { "type": "string" },
+        "adminPassword": { "type": "string" },
+        "logoUrl": { "type": "string" },
+        "faviconUrl": { "type": "string" },
+        "theme": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "users": {
+      "schema": "User",
+      "description": "Collection of team members"
+    },
+    "settings": {
+      "schema": "Settings",
+      "description": "Global app settings"
+    }
+  }
+}

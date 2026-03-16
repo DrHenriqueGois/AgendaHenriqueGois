@@ -5,7 +5,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { Palette, Type as TypeIcon, Image as ImageIcon, Instagram, LogOut, Save, Loader2, Lock as LockIcon, Trash2, Users as UsersIcon, UserPlus, Edit2, CheckCircle, XCircle, UploadCloud, Sun, Moon, Bell, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { pushNotificationService } from '../services/pushNotificationService';
-import { cloudinaryService } from '../services/cloudinaryService';
 
 const IMAGE_KEYS_MAP: Record<string, string> = {
   faviconUrl: 'favicon',
@@ -17,13 +16,15 @@ const IMAGE_KEYS_MAP: Record<string, string> = {
 };
 
 export const Settings = () => {
-  const { user, teamMember, settings, logout, refreshSettings } = useAuth();
+  const { user, teamMember, teamMembers, settings, logout, refreshSettings } = useAuth();
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [saveStatus, setSaveStatus] = useState('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [userLoading, setUserLoading] = useState(false);
   const isAdmin = (!!user && !teamMember) || teamMember?.role === 'administrador';
-  const [users, setUsers] = useState<any[]>([]);
+  
+  const users = teamMembers.filter((u: any) => u.username !== 'SEC TURISMO GERAL');
+  
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
   const [isDeletingUser, setIsDeletingUser] = useState(false);
@@ -56,18 +57,6 @@ export const Settings = () => {
     headerImageUrl: '',
     theme: 'light',
   });
-
-  useEffect(() => {
-    if (!isAdmin) return;
-    const q = query(collection(db, 'users'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const docs = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() } as any))
-        .filter((u: any) => u.username !== 'SEC TURISMO GERAL'); // Filter out the restricted user
-      setUsers(docs);
-    });
-    return () => unsubscribe();
-  }, [isAdmin]);
 
   useEffect(() => {
     const checkSubscription = async () => {
@@ -150,13 +139,25 @@ export const Settings = () => {
     const file = e.target.files?.[0];
     if (!file || !isAdmin) return;
 
+    // Check file size (Base64 increases size by ~33%, Firestore doc limit is 1MB)
+    if (file.size > 500000) { // 500KB limit for safety
+      setErrorMessage('A imagem é muito grande. Use uma imagem menor que 500KB.');
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 4000);
+      return;
+    }
+
     setSettingsLoading(true);
     setSaveStatus('idle');
     
     try {
-      // Use Cloudinary instead of Base64 for better performance and to avoid Firestore limits
-      const result = await cloudinaryService.uploadImage(file);
-      const imageUrl = result.url;
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+      });
+      reader.readAsDataURL(file);
+      const imageUrl = await base64Promise;
       
       // Update local state for immediate feedback
       setFormData(prev => ({ ...prev, [field]: imageUrl }));
@@ -169,7 +170,7 @@ export const Settings = () => {
       setTimeout(() => setSaveStatus('idle'), 2000);
     } catch (err: any) {
       console.error('Erro ao salvar imagem:', err);
-      setErrorMessage(err.message || 'Erro ao fazer upload da imagem.');
+      setErrorMessage(err.message || 'Erro ao processar a imagem.');
       setSaveStatus('error');
       setTimeout(() => setSaveStatus('idle'), 4000);
     } finally {
@@ -233,13 +234,16 @@ export const Settings = () => {
 
   const handleUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isAdmin) return;
+    if (!isAdmin) {
+      alert('Você não tem permissão para realizar esta ação.');
+      return;
+    }
     
     setUserLoading(true);
     setSaveStatus('idle');
     setErrorMessage('');
 
-    // Create a timeout promise to prevent infinite hangs
+    console.log('Salvando usuário:', userFormData);
     const timeoutPromise = new Promise((_, reject) => 
       setTimeout(() => reject(new Error('Tempo limite excedido ao salvar usuário. Verifique sua conexão.')), 15000)
     );
@@ -266,6 +270,30 @@ export const Settings = () => {
 
     } catch (err: any) {
       console.error('Erro ao salvar usuário:', err);
+      
+      // Mandatory Firestore Error Handling
+      if (err.code === 'permission-denied') {
+        const errInfo = {
+          error: err.message,
+          operationType: editingUser ? 'update' : 'create',
+          path: editingUser ? `users/${editingUser.id}` : 'users',
+          authInfo: {
+            userId: auth.currentUser?.uid,
+            email: auth.currentUser?.email,
+            emailVerified: auth.currentUser?.emailVerified,
+            isAnonymous: auth.currentUser?.isAnonymous,
+            tenantId: auth.currentUser?.tenantId,
+            providerInfo: auth.currentUser?.providerData.map((provider: any) => ({
+              providerId: provider.providerId,
+              displayName: provider.displayName,
+              email: provider.email,
+              photoUrl: provider.photoURL
+            })) || []
+          }
+        };
+        console.error('Firestore Error: ', JSON.stringify(errInfo));
+      }
+
       setSaveStatus('error');
       setErrorMessage(err.message || 'Erro ao salvar usuário. Tente novamente.');
     } finally {
@@ -281,8 +309,31 @@ export const Settings = () => {
       setSaveStatus('success');
       setErrorMessage('Usuário removido!');
       setTimeout(() => setSaveStatus('idle'), 3000);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      
+      if (err.code === 'permission-denied') {
+        const errInfo = {
+          error: err.message,
+          operationType: 'delete',
+          path: `users/${id}`,
+          authInfo: {
+            userId: auth.currentUser?.uid,
+            email: auth.currentUser?.email,
+            emailVerified: auth.currentUser?.emailVerified,
+            isAnonymous: auth.currentUser?.isAnonymous,
+            tenantId: auth.currentUser?.tenantId,
+            providerInfo: auth.currentUser?.providerData.map((provider: any) => ({
+              providerId: provider.providerId,
+              displayName: provider.displayName,
+              email: provider.email,
+              photoUrl: provider.photoURL
+            })) || []
+          }
+        };
+        console.error('Firestore Error: ', JSON.stringify(errInfo));
+      }
+
       setSaveStatus('error');
       setErrorMessage('Erro ao remover usuário.');
     } finally {

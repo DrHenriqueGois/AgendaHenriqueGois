@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Timestamp, collection, addDoc, updateDoc, doc, getDocs, query, where } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, auth } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { X, Save, Loader2, Users } from 'lucide-react';
 import { format } from 'date-fns';
@@ -14,9 +14,12 @@ interface ActivityModalProps {
 }
 
 export const ActivityModal = ({ date, onClose, activity }: ActivityModalProps) => {
-  const { user, teamMember, settings } = useAuth();
+  const { user, teamMember, teamMembers: allMembers, settings } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [teamMembers, setTeamMembers] = useState<any[]>([]);
+  
+  const teamMembers = allMembers.filter((member: any) => 
+    member.status === 'active' && member.name !== 'SEC TURISMO GERAL'
+  );
   
   const getInitialDate = () => {
     try {
@@ -51,18 +54,6 @@ export const ActivityModal = ({ date, onClose, activity }: ActivityModalProps) =
     priority: activity?.priority || '',
     recurrence: activity?.recurrence || 'none',
   });
-
-  useEffect(() => {
-    const fetchMembers = async () => {
-      const q = query(collection(db, 'users'), where('status', '==', 'active'));
-      const snapshot = await getDocs(q);
-      const members = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() } as any))
-        .filter((member: any) => member.name !== 'SEC TURISMO GERAL');
-      setTeamMembers(members);
-    };
-    fetchMembers();
-  }, []);
 
   const toggleCollaborator = (id: string) => {
     setFormData(prev => ({
@@ -153,8 +144,31 @@ export const ActivityModal = ({ date, onClose, activity }: ActivityModalProps) =
       }
 
       onClose();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      
+      if (err.code === 'permission-denied') {
+        const errInfo = {
+          error: err.message,
+          operationType: activity ? 'update' : 'create',
+          path: activity ? `activities/${activity.id}` : 'activities',
+          authInfo: {
+            userId: auth.currentUser?.uid,
+            email: auth.currentUser?.email,
+            emailVerified: auth.currentUser?.emailVerified,
+            isAnonymous: auth.currentUser?.isAnonymous,
+            tenantId: auth.currentUser?.tenantId,
+            providerInfo: auth.currentUser?.providerData.map((provider: any) => ({
+              providerId: provider.providerId,
+              displayName: provider.displayName,
+              email: provider.email,
+              photoUrl: provider.photoURL
+            })) || []
+          }
+        };
+        console.error('Firestore Error: ', JSON.stringify(errInfo));
+      }
+
       alert('Erro ao salvar atividade.');
     } finally {
       setLoading(false);

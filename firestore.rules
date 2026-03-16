@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Fields:
+    //   - name: string (required)
+    //   - username: string (required)
+    //   - password: string (required)
+    //   - function: string (optional)
+    //   - role: string (required, 'administrador' or 'usuario')
+    //   - status: string (required, 'active' or 'inactive')
+    //
+    // Collection: settings
+    // Fields:
+    //   - appName: string
+    //   - primaryColor: string
+    //   - adminPassword: string
+    //   - logoUrl: string
+    //   - faviconUrl: string
+    //   - theme: string
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'administrador' ||
+         (request.auth.token.email == "p4zzlofi@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['name', 'username', 'password', 'role', 'status']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.username is string && data.username.size() > 0 && data.username.size() < 50 &&
+             data.password is string && data.password.size() > 0 && data.password.size() < 100 &&
+             data.role in ['administrador', 'usuario'] &&
+             data.status in ['active', 'inactive'];
+    }
+
+    function isValidSettings(data) {
+      return true; // Basic validation for settings
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /settings/{settingId} {
+      allow read: if true; // Public settings like app name/color
+      allow write: if isAdmin();
+    }
+    
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

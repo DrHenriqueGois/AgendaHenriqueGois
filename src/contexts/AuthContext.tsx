@@ -1,17 +1,17 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { onAuthStateChanged, signOut, User } from 'firebase/auth';
+import { doc, onSnapshot, collection, QuerySnapshot, DocumentData } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
-
-import { User } from 'firebase/auth';
 
 interface AuthContextType {
   user: User | null;
   teamMember: any | null;
+  teamMembers: any[];
   loading: boolean;
   settings: any | null;
   logout: () => Promise<void>;
   loginAsTeamMember: (member: any) => void;
+  clearTeamMember: () => void;
   refreshSettings: () => void;
 }
 
@@ -20,6 +20,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [teamMember, setTeamMember] = useState<any | null>(null);
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [settings, setSettings] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -100,9 +101,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const unsubscribeSettings = refreshSettings();
 
+    // Fetch team members once and listen for changes
+    const unsubscribeUsers = onSnapshot(collection(db, 'users'), (snapshot: QuerySnapshot<DocumentData>) => {
+      const members = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+      setTeamMembers(members);
+    }, (err: Error) => {
+      console.error("Error fetching users:", err);
+    });
+
     return () => {
       unsubscribeAuth();
       unsubscribeSettings();
+      unsubscribeUsers();
     };
   }, [refreshSettings]);
 
@@ -117,8 +127,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.setItem('team_member_session', JSON.stringify(member));
   };
 
+  const clearTeamMember = () => {
+    setTeamMember(null);
+    localStorage.removeItem('team_member_session');
+  };
+
   return (
-    <AuthContext.Provider value={{ user, teamMember, loading, settings, logout, loginAsTeamMember, refreshSettings }}>
+    <AuthContext.Provider value={{ user, teamMember, teamMembers, loading, settings, logout, loginAsTeamMember, clearTeamMember, refreshSettings }}>
       {children}
     </AuthContext.Provider>
   );

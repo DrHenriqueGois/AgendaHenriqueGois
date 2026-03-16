@@ -6,7 +6,7 @@ import { Instagram, Lock as LockIcon, Loader2, User as UserIcon } from 'lucide-r
 import { useAuth } from '../contexts/AuthContext';
 
 export const Login = () => {
-  const { settings, loginAsTeamMember } = useAuth();
+  const { settings, loginAsTeamMember, clearTeamMember } = useAuth();
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -24,9 +24,11 @@ export const Login = () => {
         const adminFirebasePassword = 'admin_password_123';
         try {
           await signInWithEmailAndPassword(auth, adminEmail, adminFirebasePassword);
+          clearTeamMember();
         } catch (signInErr: any) {
           if (signInErr.code === 'auth/user-not-found' || signInErr.code === 'auth/invalid-credential' || signInErr.code === 'auth/wrong-password') {
             await createUserWithEmailAndPassword(auth, adminEmail, adminFirebasePassword);
+            clearTeamMember();
           } else {
             throw signInErr;
           }

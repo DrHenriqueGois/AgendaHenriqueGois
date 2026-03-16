@@ -5,7 +5,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { Cake, Calendar, Plus, Search, Trash2, Edit2, X, User, UploadCloud, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { pushNotificationService } from '../services/pushNotificationService';
-import { cloudinaryService } from '../services/cloudinaryService';
 
 const MONTHS = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -101,10 +100,22 @@ export const Birthdays = () => {
     try {
       let finalPhotoUrl = formData.photoUrl;
 
-      // Upload photo if there's a pending one
+      // Convert photo to Base64 if there's a pending one
       if (pendingPhoto) {
-        const data = await cloudinaryService.uploadImage(pendingPhoto);
-        finalPhotoUrl = data.url;
+        // Check file size (Base64 increases size by ~33%, Firestore doc limit is 1MB)
+        if (pendingPhoto.size > 500000) { // 500KB limit for safety
+          alert('A imagem é muito grande. Use uma imagem menor que 500KB.');
+          setUploading(false);
+          return;
+        }
+
+        const reader = new FileReader();
+        const base64Promise = new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+        });
+        reader.readAsDataURL(pendingPhoto);
+        finalPhotoUrl = await base64Promise;
       }
 
       if (editingBirthday) {
