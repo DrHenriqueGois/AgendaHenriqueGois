@@ -6,6 +6,7 @@ import { X, Save, Loader2, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { pushNotificationService } from '../services/pushNotificationService';
+import { toast } from 'sonner';
 
 interface ActivityModalProps {
   date: Date;
@@ -70,12 +71,12 @@ export const ActivityModal = ({ date, onClose, activity }: ActivityModalProps) =
     if (!currentUserId) return;
 
     if (!formData.priority) {
-      alert('Por favor, selecione uma prioridade.');
+      toast.error('Por favor, selecione uma prioridade.');
       return;
     }
 
     if (!formData.date || !formData.time) {
-      alert('Por favor, preencha a data e o horário.');
+      toast.error('Por favor, preencha a data e o horário.');
       return;
     }
 
@@ -144,6 +145,7 @@ export const ActivityModal = ({ date, onClose, activity }: ActivityModalProps) =
       }
 
       onClose();
+      toast.success(activity ? 'Atividade atualizada com sucesso!' : 'Atividade agendada com sucesso!');
     } catch (err: any) {
       console.error(err);
       
@@ -169,7 +171,7 @@ export const ActivityModal = ({ date, onClose, activity }: ActivityModalProps) =
         console.error('Firestore Error: ', JSON.stringify(errInfo));
       }
 
-      alert('Erro ao salvar atividade.');
+      toast.error('Erro ao salvar atividade.');
     } finally {
       setLoading(false);
     }

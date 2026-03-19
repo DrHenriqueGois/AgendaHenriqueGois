@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, doc, Timestamp, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { storage } from '../lib/storage';
 import { Cake, Calendar, Plus, Search, Trash2, Edit2, X, User, UploadCloud, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { pushNotificationService } from '../services/pushNotificationService';
+import { toast } from 'sonner';
 
 const MONTHS = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -61,7 +63,7 @@ export const Birthdays = () => {
       const todaysBirthdays = sortedDocs.filter(b => b.day === todayDate && b.month === currentMonth);
       
       if (todaysBirthdays.length > 0) {
-        const notifiedToday = localStorage.getItem(`birthday_notified_${todayDate}_${currentMonth}`);
+        const notifiedToday = storage.getItem(`birthday_notified_${todayDate}_${currentMonth}`);
         if (!notifiedToday) {
           todaysBirthdays.forEach(b => {
             pushNotificationService.sendNotification(
@@ -70,7 +72,7 @@ export const Birthdays = () => {
               '/birthdays'
             );
           });
-          localStorage.setItem(`birthday_notified_${todayDate}_${currentMonth}`, 'true');
+          storage.setItem(`birthday_notified_${todayDate}_${currentMonth}`, 'true');
         }
       }
     }, (error) => {
@@ -104,7 +106,7 @@ export const Birthdays = () => {
       if (pendingPhoto) {
         // Check file size (Base64 increases size by ~33%, Firestore doc limit is 1MB)
         if (pendingPhoto.size > 500000) { // 500KB limit for safety
-          alert('A imagem é muito grande. Use uma imagem menor que 500KB.');
+          toast.error('A imagem é muito grande. Use uma imagem menor que 500KB.');
           setUploading(false);
           return;
         }
@@ -135,9 +137,10 @@ export const Birthdays = () => {
         });
       }
       closeModal();
+      toast.success(editingBirthday ? 'Aniversariante atualizado!' : 'Aniversariante cadastrado!');
     } catch (err) {
       console.error(err);
-      alert('Erro ao salvar aniversariante.');
+      toast.error('Erro ao salvar aniversariante.');
     } finally {
       setUploading(false);
     }
@@ -151,6 +154,7 @@ export const Birthdays = () => {
       const birthdayToDelete = birthdays.find(b => b.id === deleteId);
       await deleteDoc(doc(db, 'birthdays', deleteId));
       console.log('Documento excluído do Firestore');
+      toast.success('Aniversariante excluído com sucesso!');
       
       // Note: Cloudinary deletion would require public_id. 
       // For now, we just delete the document.
@@ -158,7 +162,7 @@ export const Birthdays = () => {
       setDeleteId(null);
     } catch (err) {
       console.error('Erro ao excluir:', err);
-      alert('Erro ao excluir aniversariante.');
+      toast.error('Erro ao excluir aniversariante.');
     } finally {
       setIsDeleting(false);
     }

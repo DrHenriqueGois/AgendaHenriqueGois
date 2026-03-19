@@ -4,6 +4,7 @@ import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { format, isAfter, startOfDay, isSameDay } from 'date-fns';
 import { Search, Calendar as CalendarIcon, Clock, Trash2, CheckCircle2, AlertCircle, Edit2, Users, StickyNote, Plus, Save, X, Loader2, Star, Share2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export const ActivityList = ({ onEditActivity }: { onEditActivity: (activity: any) => void }) => {
   const { user, teamMember } = useAuth();
@@ -140,7 +141,7 @@ export const ActivityList = ({ onEditActivity }: { onEditActivity: (activity: an
     }
   };
 
-  const handleShare = (activity: any) => {
+  const handleShare = async (activity: any) => {
     const activityDate = activity.date?.toDate?.() || new Date();
     const formattedDate = format(activityDate, "dd/MM/yyyy");
     const formattedTime = format(activityDate, "HH:mm");
@@ -157,8 +158,22 @@ ${collaboratorNames}
 *Horário:* ${formattedTime}
 *Prioridade:* ${getPriorityLabel(activity.priority)}`;
 
-    const encodedMessage = encodeURIComponent(message);
-    window.open(`https://api.whatsapp.com/send?text=${encodedMessage}`, '_blank');
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: activity.title,
+          text: message,
+        });
+      } catch (err) {
+        console.error('Error sharing:', err);
+        // Fallback to WhatsApp if share fails
+        const encodedMessage = encodeURIComponent(message);
+        window.location.href = `https://api.whatsapp.com/send?text=${encodedMessage}`;
+      }
+    } else {
+      const encodedMessage = encodeURIComponent(message);
+      window.location.href = `https://api.whatsapp.com/send?text=${encodedMessage}`;
+    }
   };
 
   const filteredActivities = activities.filter((a: any) => {
@@ -189,7 +204,7 @@ ${collaboratorNames}
       setItemToDelete(null);
     } catch (err) {
       console.error(err);
-      alert('Erro ao apagar atividade.');
+      toast.error('Erro ao apagar atividade.');
     } finally {
       setIsDeleting(false);
     }
@@ -221,7 +236,7 @@ ${collaboratorNames}
       setNoteContent('');
     } catch (err) {
       console.error(err);
-      alert('Erro ao salvar nota.');
+      toast.error('Erro ao salvar nota.');
     } finally {
       setIsSavingNote(false);
     }
@@ -234,7 +249,7 @@ ${collaboratorNames}
       setItemToDelete(null);
     } catch (err) {
       console.error(err);
-      alert('Erro ao apagar nota.');
+      toast.error('Erro ao apagar nota.');
     } finally {
       setIsDeleting(false);
     }

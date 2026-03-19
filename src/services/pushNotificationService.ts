@@ -1,4 +1,5 @@
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+import { storage } from '../lib/storage';
 
 export const pushNotificationService = {
   async registerServiceWorker() {
@@ -49,7 +50,7 @@ export const pushNotificationService = {
         }
       });
 
-      localStorage.setItem("push_notifications_enabled", "true");
+      storage.setItem("push_notifications_enabled", "true");
       return true;
     } catch (error) {
       console.error("Failed to subscribe user:", error);
@@ -73,7 +74,7 @@ export const pushNotificationService = {
           }
         });
       }
-      localStorage.setItem("push_notifications_enabled", "false");
+      storage.setItem("push_notifications_enabled", "false");
       return true;
     } catch (error) {
       console.error("Failed to unsubscribe user:", error);

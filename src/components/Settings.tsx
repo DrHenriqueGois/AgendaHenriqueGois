@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Palette, Type as TypeIcon, Image as ImageIcon, Instagram, LogOut, Save, Loader2, Lock as LockIcon, Trash2, Users as UsersIcon, UserPlus, Edit2, CheckCircle, XCircle, UploadCloud, Sun, Moon, Bell, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { pushNotificationService } from '../services/pushNotificationService';
+import { toast } from 'sonner';
 
 export const Settings = () => {
   const { user, teamMember, teamMembers, settings, logout, refreshSettings } = useAuth();
@@ -226,7 +227,7 @@ export const Settings = () => {
   const handleUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAdmin) {
-      alert('Você não tem permissão para realizar esta ação.');
+      toast.error('Você não tem permissão para realizar esta ação.');
       return;
     }
     

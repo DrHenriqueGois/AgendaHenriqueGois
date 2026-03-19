@@ -2,11 +2,13 @@ import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Login } from './components/Login';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { storage } from './lib/storage';
 import { Home, ListTodo, Settings as SettingsIcon, Plus, Loader2, Bell, LogOut, Cake, Sun, Moon, X } from 'lucide-react';
 import { collection, query, where, onSnapshot, Timestamp, addDoc, getDocs } from 'firebase/firestore';
 import { db } from './lib/firebase';
 import { startOfDay, endOfDay } from 'date-fns';
 import { pushNotificationService } from './services/pushNotificationService';
+import { Toaster } from 'sonner';
 
 // Lazy load components for better performance
 const Calendar = lazy(() => import('./components/Calendar').then(module => ({ default: module.Calendar })));
@@ -24,7 +26,7 @@ function AppContent() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [editingActivity, setEditingActivity] = useState<any>(null);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [localTheme, setLocalTheme] = useState<string | null>(localStorage.getItem('theme_preference'));
+  const [localTheme, setLocalTheme] = useState<string | null>(storage.getItem('theme_preference'));
   const [showPushPrompt, setShowPushPrompt] = useState(false);
 
   const isAdmin = (!!user && !teamMember) || teamMember?.role === 'administrador';
@@ -32,8 +34,10 @@ function AppContent() {
   useEffect(() => {
     if (user || teamMember) {
       // Check if we should show push notification prompt
-      const hasPrompted = localStorage.getItem('push_prompted');
-      if (!hasPrompted && Notification.permission === 'default') {
+      const hasPrompted = storage.getItem('push_prompted');
+      const supportsNotifications = 'Notification' in window;
+      
+      if (!hasPrompted && supportsNotifications && window.Notification.permission === 'default') {
         setTimeout(() => setShowPushPrompt(true), 5000);
       }
       
@@ -47,12 +51,12 @@ function AppContent() {
     if (granted) {
       await pushNotificationService.subscribeUser();
     }
-    localStorage.setItem('push_prompted', 'true');
+    storage.setItem('push_prompted', 'true');
     setShowPushPrompt(false);
   };
 
   const handleDeclinePush = () => {
-    localStorage.setItem('push_prompted', 'true');
+    storage.setItem('push_prompted', 'true');
     setShowPushPrompt(false);
   };
 
@@ -60,7 +64,7 @@ function AppContent() {
     const currentTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
     setLocalTheme(newTheme);
-    localStorage.setItem('theme_preference', newTheme);
+    storage.setItem('theme_preference', newTheme);
   };
 
   // Dark mode support
@@ -94,8 +98,14 @@ function AppContent() {
       }
     };
 
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    } else {
+      // Fallback for older browsers (like older iOS Safari)
+      mediaQuery.addListener(handleChange);
+      return () => mediaQuery.removeListener(handleChange);
+    }
   }, [settings?.theme, localTheme]);
 
   // Check for today's activities and create persistent notifications
@@ -363,6 +373,7 @@ function AppContent() {
           </div>
         </div>
       )}
+      <Toaster position="top-center" richColors />
     </div>
   );
 }

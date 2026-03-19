@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { onAuthStateChanged, signOut, User } from 'firebase/auth';
 import { doc, onSnapshot, collection, QuerySnapshot, DocumentData } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
+import { storage } from '../lib/storage';
 
 interface AuthContextType {
   user: User | null;
@@ -86,12 +87,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [applySettings]);
 
   useEffect(() => {
-    const savedMember = localStorage.getItem('team_member_session');
+    const savedMember = storage.getItem('team_member_session');
     if (savedMember) {
       try {
         setTeamMember(JSON.parse(savedMember));
       } catch (e) {
-        localStorage.removeItem('team_member_session');
+        storage.removeItem('team_member_session');
       }
     }
 
@@ -119,17 +120,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = async () => {
     await signOut(auth);
     setTeamMember(null);
-    localStorage.removeItem('team_member_session');
+    storage.removeItem('team_member_session');
   };
 
   const loginAsTeamMember = (member: any) => {
     setTeamMember(member);
-    localStorage.setItem('team_member_session', JSON.stringify(member));
+    storage.setItem('team_member_session', JSON.stringify(member));
   };
 
   const clearTeamMember = () => {
     setTeamMember(null);
-    localStorage.removeItem('team_member_session');
+    storage.removeItem('team_member_session');
   };
 
   return (

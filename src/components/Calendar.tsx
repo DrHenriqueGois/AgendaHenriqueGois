@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, List as List
 import { collection, query, where, onSnapshot, Timestamp, deleteDoc, doc, getDocs } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface CalendarProps {
   onAddActivity: (date: Date) => void;
@@ -83,7 +84,7 @@ export const Calendar = ({ onAddActivity, onEditActivity }: CalendarProps) => {
         console.error('Firestore Error: ', JSON.stringify(errInfo));
       }
 
-      alert('Erro ao apagar atividade.');
+      toast.error('Erro ao apagar atividade.');
     } finally {
       setIsDeleting(false);
     }
@@ -111,7 +112,7 @@ export const Calendar = ({ onAddActivity, onEditActivity }: CalendarProps) => {
     }
   };
 
-  const handleShare = (activity: any) => {
+  const handleShare = async (activity: any) => {
     const date = activity.date.toDate();
     const formattedDate = format(date, "dd/MM/yyyy");
     const formattedTime = format(date, "HH:mm");
@@ -128,8 +129,22 @@ ${collaboratorNames}
 *Horário:* ${formattedTime}
 *Prioridade:* ${getPriorityLabel(activity.priority)}`;
 
-    const encodedMessage = encodeURIComponent(message);
-    window.open(`https://api.whatsapp.com/send?text=${encodedMessage}`, '_blank');
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: activity.title,
+          text: message,
+        });
+      } catch (err) {
+        console.error('Error sharing:', err);
+        // Fallback to WhatsApp if share fails
+        const encodedMessage = encodeURIComponent(message);
+        window.location.href = `https://api.whatsapp.com/send?text=${encodedMessage}`;
+      }
+    } else {
+      const encodedMessage = encodeURIComponent(message);
+      window.location.href = `https://api.whatsapp.com/send?text=${encodedMessage}`;
+    }
   };
 
   const next = () => {
